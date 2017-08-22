@@ -2,6 +2,8 @@ const vm = require("vm");
 const {join, dirname} = require("path")
 const jsesc = require("jsesc");
 const generate = require("babel-generator").default;
+const traverse = require("babel-traverse");
+const cloneDeep = require("lodash/cloneDeep");
 
 const cwd = process.cwd();
 
@@ -44,7 +46,19 @@ module.exports = ({ types: t, traverse }) => {
         const arg = node.arguments[0];
 
         if (arg.type === 'FunctionExpression' || arg.type === 'ArrowFunctionExpression') {
-          const body = t.blockStatement([].concat(context, arg.body.type === 'BlockStatement' ? arg.body.body : t.returnStatement(arg.body)));
+          const body = cloneDeep(t.blockStatement([].concat(context, arg.body.type === 'BlockStatement' ? arg.body.body : t.returnStatement(arg.body))));
+          traverse(body, {
+            noScope: true,
+            CallExpression(path) {
+              const {node} = path;
+              if (node.callee.name === '__e' && node.arguments.length === 1) {
+                const arg = node.arguments[0];
+                const r = t.valueToNode(JSON.parse(JSON.stringify(arg)))
+                path.replaceWith(r)
+              }
+            }
+          })
+
           const code = 'f = function({t, require}) ' + generate(body).code;
 
           const dn = join(cwd, dirname(path.hub.file.opts.filenameRelative));

@@ -184,35 +184,41 @@ const introductionMDAST = compileTimeExpression(loadAsMakdown('./docs/Introducti
 ```
 
 
-# Future
+## Quote expressions
 
-## Lifting arbitrary values into AST
+Use `__e()` to convert arbitrary JS code into its corresponding AST. This enables you
+to easily generate AST using plain JS syntax, instead of having to construct the AST
+manually.
 
-It would be nice to have a nice way to lift values into AST. Much like `t.valueToNode` but
-for arbitrary expressions.
-
-For example, instead of `t.arrowFunctionExpression(... t.returnStatement(... 42))`
-be able to write this:
-
-```
-const makeAnswer = compileTimeExpression(({lift}) =>
-  lift(() => 42)
-```
-
-This would make it possible to call existing functions from generated code.
+You can think of it as if whatever you put into the parenthesis is copied verbatim into
+the generated code.
 
 ```
-const inc = a => a + 1
-const x = compileTimeExpression(({t, lift}) =>
-  t.callExpression(
-    t.memberExpression(t.valueToNode([1,2,3]), t.stringLiteral('map')),
-    [lift(inc)])) // <- lift(inc) to insert a reference to the 'inc' function
+const one = 1
+const addOne = compileTimeExpression(({}) => __e(x => x + one)
+
+// ->
+
+const one = 1
+const addOne = x => x + one
 ```
 
+Here in combinate with manually constructod AST which uses `__e()` to refer to bindings
+in scope.
+
 ```
-const inc = a => a + 1
-const x = [1,2,3].map(inc);
+const numbers = [1,2,3,4]
+const inc = x => x + 1
+const higherNumbers = compileTimeExpression(({t}) =>
+  t.callExpression(t.memberExpression(__e(numbers), t.identifier('map')), [__e(inc)]))
+
+// ->
+
+const numbers = [1,2,3,4]
+const inc = x => x + 1
+const higherNumbers = numbers.map(inc)
 ```
+
 
 ## Async transformations
 

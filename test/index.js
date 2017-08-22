@@ -37,3 +37,27 @@ const string3 = compileTimeExpression(({t, require}) => {
 
 const x = compileTimeExpression(({t, require}) =>
   t.valueToNode(require('fs').readFileSync('./README.md', 'utf8')));
+
+
+// Generate a function
+const add1 = compileTimeExpression(({t}) => __e(x => x + 1));
+
+// Generate a function which uses bindings from the scope.
+const some = 2
+const addSome = compileTimeExpression(({t}) => __e(x => x + some));
+
+// Generate a function and call it immediately. Doesn't really make sense though.
+const two = compileTimeExpression(({t}) => {
+  const f = __e(x => x + 1)
+  return t.callExpression(f, [__e(1)])
+});
+
+const two2 = compileTimeExpression(({t}) => __e(inc()))
+
+const arr1 = compileTimeExpression(({t}) => t.callExpression(
+  t.memberExpression(__e([1,2,3]), t.identifier('map')), [__e(inc)]))
+
+const arr2 = compileTimeExpression(({t}) => {
+  const f = __e(x => x + 1)
+  return t.callExpression(t.memberExpression(__e(arr1), t.identifier('map')), [f])
+});
